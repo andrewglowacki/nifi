@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
 import static org.junit.Assert.assertEquals;
@@ -25,10 +41,10 @@ public class ClaimOutputStreamTest {
     @Test
     public void normalTest() throws IOException {
         ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-        
+
         ClaimClosedHandler handler = mock(ClaimClosedHandler.class);
         StandardContentClaim claim = new StandardContentClaim(mock(ResourceClaim.class), 0);
-        
+
         ClaimOutputStream claimOut = new ClaimOutputStream(handler, claim, new ByteCountingOutputStream(bytesOut));
 
         byte[] line = "this is some test data!".getBytes(StandardCharsets.UTF_8);
@@ -40,7 +56,7 @@ public class ClaimOutputStreamTest {
         verify(handler, times(0)).claimClosed(any());
 
         claimOut.close();
-        
+
         assertEquals(line.length + 2 + 4, claim.getLength());
         assertTrue(claimOut.canRecycle());
         verify(handler, times(1)).claimClosed(eq(claimOut));
@@ -62,10 +78,10 @@ public class ClaimOutputStreamTest {
                 throw new IOException("expected test error");
             }
         };
-        
+
         ClaimClosedHandler handler = mock(ClaimClosedHandler.class);
         StandardContentClaim claim = new StandardContentClaim(mock(ResourceClaim.class), 0);
-        
+
         ClaimOutputStream claimOut1 = new ClaimOutputStream(handler, claim, new ByteCountingOutputStream(failingStream));
         try {
             claimOut1.write("this is a test".getBytes(StandardCharsets.UTF_8));
@@ -75,7 +91,7 @@ public class ClaimOutputStreamTest {
 
         assertEquals(-1, claim.getLength());
         assertFalse(claimOut1.canRecycle());
-        
+
         ClaimOutputStream claimOut2 = new ClaimOutputStream(handler, claim, new ByteCountingOutputStream(failingStream));
         try {
             claimOut2.write("this is a test".getBytes(StandardCharsets.UTF_8), 0, 4);
@@ -84,7 +100,7 @@ public class ClaimOutputStreamTest {
         claimOut2.close();
 
         assertFalse(claimOut2.canRecycle());
-        
+
         ClaimOutputStream claimOut3 = new ClaimOutputStream(handler, claim, new ByteCountingOutputStream(failingStream));
         try {
             claimOut3.write('\n');
@@ -93,7 +109,7 @@ public class ClaimOutputStreamTest {
         claimOut3.close();
 
         assertFalse(claimOut3.canRecycle());
-        
+
     }
 
 }

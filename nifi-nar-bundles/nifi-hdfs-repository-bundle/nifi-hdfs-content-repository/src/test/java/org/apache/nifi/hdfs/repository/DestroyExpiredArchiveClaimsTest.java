@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
 import static org.apache.nifi.hdfs.repository.HdfsContentRepository.ARCHIVE_DIR_NAME;
@@ -39,7 +55,7 @@ public class DestroyExpiredArchiveClaimsTest {
 
     @Test
     public void ageOffOnlyTest() throws IOException {
-        
+
         NiFiProperties props = props(
             prop(REPOSITORY_CONTENT_PREFIX + "disk1", "file:target/destroy-archive-test/disk1"),
             prop(CORE_SITE_DEFAULT_PROPERTY, "src/test/resources/empty-core-site.xml"),
@@ -62,7 +78,7 @@ public class DestroyExpiredArchiveClaimsTest {
         File two = touch(archiveDir, "claim-1", now - 5000);
         File three = touch(archiveDir, "claim-2", now - 60000);
 
-        // This should delete 'three' because it's more than 30 seconds 
+        // This should delete 'three' because it's more than 30 seconds
         // old. It should return 'two's time as the next oldest file that isn't aged off
         assertEquals(now - 5000, destroy.destroyExpiredArchives());
 
@@ -71,7 +87,7 @@ public class DestroyExpiredArchiveClaimsTest {
         assertTrue(two.isFile());
         assertFalse(three.isFile());
     }
-    
+
     @Test
     public void oversizedTest() throws IOException {
         NiFiProperties props = props(
@@ -91,7 +107,7 @@ public class DestroyExpiredArchiveClaimsTest {
         // with minimum size: 990, and current size: 1000, we need to free: 10 bytes
         when(container.getMinUsableSpaceForArchive()).thenReturn(1000L);
         when(repo.getContainerUsableSpace(anyString())).thenReturn(990L);
-        
+
         // each file is 10 bytes big, so only one needs to be deleted
         File archiveDir = new File(new File(base, "0"), ARCHIVE_DIR_NAME);
         File one = touch(archiveDir, "claim-1", now, "0123456789");
@@ -100,8 +116,8 @@ public class DestroyExpiredArchiveClaimsTest {
 
         DestroyExpiredArchiveClaims destroy = new DestroyExpiredArchiveClaims(repo, container, 1000 * 60 * 5);
 
-        // This should delete 'two' because the oldest file it shouldn't 
-        // delete 'three' or 'one' because they are not expired, and deleting 
+        // This should delete 'two' because the oldest file it shouldn't
+        // delete 'three' or 'one' because they are not expired, and deleting
         // 'two' is sufficient to bring the free space up to the desired amount
         assertEquals(now - 9000, destroy.destroyExpiredArchives());
 
@@ -129,7 +145,7 @@ public class DestroyExpiredArchiveClaimsTest {
         long now = (System.currentTimeMillis() / 1000) * 1000;
 
         Container container = group.iterator().next();
-        
+
         File archiveDir = new File(new File(base, "0"), ARCHIVE_DIR_NAME);
         File one = touch(archiveDir, "claim-1", now, "0123456789");
         File two = touch(archiveDir, "claim-2", now - 10000, "0123456789");

@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
 import static org.apache.nifi.hdfs.repository.HdfsContentRepository.CORE_SITE_DEFAULT_PROPERTY;
@@ -51,7 +67,7 @@ public class ReArchiveClaimsTest {
         ReArchiveClaims rearchive = new ReArchiveClaims(primary.atModIndex(0), archive, 10);
 
         rearchive.run();
-        
+
         assertFalse(original.isFile());
 
         File copied = new File("target/rearchive-test/archive/0/archive/claim-0");
@@ -63,7 +79,7 @@ public class ReArchiveClaimsTest {
 
     @Test
     public void failureTest() throws IOException {
-        
+
         NiFiProperties props = props(
             prop(REPOSITORY_CONTENT_PREFIX + "disk1", "file:target/rearchive-test/primary"),
             prop(REPOSITORY_CONTENT_PREFIX + "disk2", "file:target/rearchive-test/archive"),
@@ -88,7 +104,7 @@ public class ReArchiveClaimsTest {
         try (PrintWriter writer = new PrintWriter(original)) {
             writer.print("test claim data!");
         }
-        
+
         ReArchiveClaims rearchive = new ReArchiveClaims(primary.atModIndex(0), archive, 10);
 
         // rearchiving should fail because we throw an exception when getFileSystem on the archive container

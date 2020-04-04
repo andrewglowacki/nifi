@@ -1,10 +1,29 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
-import static org.apache.nifi.hdfs.repository.HdfsContentRepository.*;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.OPERATING_MODE_PROPERTY;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.FAILURE_TIMEOUT_PROPERTY;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.FULL_PERCENTAGE_PROPERTY;
 import static org.apache.nifi.hdfs.repository.PropertiesBuilder.config;
 import static org.apache.nifi.hdfs.repository.PropertiesBuilder.prop;
 import static org.apache.nifi.hdfs.repository.PropertiesBuilder.props;
-import static org.apache.nifi.util.NiFiProperties.*;
+import static org.apache.nifi.util.NiFiProperties.CONTENT_ARCHIVE_MAX_USAGE_PERCENTAGE;
+import static org.apache.nifi.util.NiFiProperties.DEFAULT_MAX_FLOWFILES_PER_CLAIM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -33,26 +52,26 @@ public class RepositoryConfigTest {
         assertFalse(config.isArchiveData());
         assertEquals(set(OperatingMode.Normal), config.getModes());
     }
-    
+
     @Test
     public void modesTest() {
         assertEquals(
-            set(OperatingMode.Normal), 
+            set(OperatingMode.Normal),
             config(props(prop(OPERATING_MODE_PROPERTY, "Normal"))).getModes()
         );
 
         assertEquals(
-            set(OperatingMode.Normal, OperatingMode.Archive), 
+            set(OperatingMode.Normal, OperatingMode.Archive),
             config(props(prop(OPERATING_MODE_PROPERTY, "Archive"))).getModes()
         );
 
         assertEquals(
-            set(OperatingMode.Normal, OperatingMode.Archive), 
+            set(OperatingMode.Normal, OperatingMode.Archive),
             config(props(prop(OPERATING_MODE_PROPERTY, "Normal,Archive"))).getModes()
         );
 
         assertEquals(
-            set(OperatingMode.Normal, OperatingMode.CapacityFallback), 
+            set(OperatingMode.Normal, OperatingMode.CapacityFallback),
             config(props(prop(OPERATING_MODE_PROPERTY, "CapacityFallback"))).getModes()
         );
 
@@ -62,9 +81,9 @@ public class RepositoryConfigTest {
         } catch (RuntimeException ex) {
             assertTrue(ex.getMessage(), ex.getMessage().contains("FailureFallback operating mode is active, and failure timeout is not specified."));
         }
-        
+
         assertEquals(
-            set(OperatingMode.Normal, OperatingMode.FailureFallback), 
+            set(OperatingMode.Normal, OperatingMode.FailureFallback),
             config(props(
                 prop(OPERATING_MODE_PROPERTY, "FailureFallback"),
                 prop(FAILURE_TIMEOUT_PROPERTY, "1 minute")
@@ -72,18 +91,18 @@ public class RepositoryConfigTest {
         );
 
         assertEquals(
-            set(OperatingMode.Normal, OperatingMode.CapacityFallback, OperatingMode.Archive), 
+            set(OperatingMode.Normal, OperatingMode.CapacityFallback, OperatingMode.Archive),
             config(props(prop(OPERATING_MODE_PROPERTY, "CapacityFallback,Archive"))).getModes()
         );
 
         assertEquals(
-            set(OperatingMode.Normal, OperatingMode.FailureFallback, OperatingMode.Archive), 
+            set(OperatingMode.Normal, OperatingMode.FailureFallback, OperatingMode.Archive),
             config(props(
                 prop(OPERATING_MODE_PROPERTY, "FailureFallback,Archive"),
                 prop(FAILURE_TIMEOUT_PROPERTY, "1 minute")
             )).getModes()
         );
-        
+
         try {
             config(props(
                 prop(OPERATING_MODE_PROPERTY, "FailureFallback,CapacityFallback"),

@@ -1,7 +1,30 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
-import static org.apache.nifi.hdfs.repository.HdfsContentRepository.*;
-import static org.apache.nifi.util.NiFiProperties.*;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.FAILURE_TIMEOUT_PROPERTY;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.FULL_PERCENTAGE_PROPERTY;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.HEALTH_CHECK_RUN_INTERVAL_SECONDS;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.OPERATING_MODE_PROPERTY;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.SECTIONS_PER_CONTAINER_PROPERTY;
+import static org.apache.nifi.util.NiFiProperties.CONTENT_ARCHIVE_ENABLED;
+import static org.apache.nifi.util.NiFiProperties.CONTENT_ARCHIVE_MAX_USAGE_PERCENTAGE;
+import static org.apache.nifi.util.NiFiProperties.FLOWFILE_REPOSITORY_ALWAYS_SYNC;
+import static org.apache.nifi.util.NiFiProperties.FLOW_CONFIGURATION_ARCHIVE_MAX_TIME;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,7 +65,7 @@ public class RepositoryConfig {
         this.modes = Collections.unmodifiableSet(modes);
 
         if (hasMode(OperatingMode.CapacityFallback) && hasMode(OperatingMode.FailureFallback)) {
-            throw new RuntimeException("Both CapacityFallback and FailureFallback modes were specified in '" + 
+            throw new RuntimeException("Both CapacityFallback and FailureFallback modes were specified in '" +
                 OPERATING_MODE_PROPERTY + "' - however they are mutually exclusive.");
         }
 
@@ -50,10 +73,10 @@ public class RepositoryConfig {
         this.maxFlowFilesPerClaim = properties.getMaxFlowFilesPerClaim();
         this.alwaysSync = properties.getProperty(FLOWFILE_REPOSITORY_ALWAYS_SYNC, "false").equalsIgnoreCase("true");
         this.archiveData = properties.getProperty(CONTENT_ARCHIVE_ENABLED, "false").equalsIgnoreCase("true");
-        
+
         // ignore 'max size' - this is HDFS
         this.maxAppendableClaimLength = DataUnit.parseDataSize(properties.getMaxAppendableClaimSize(), DataUnit.B).longValue();
-        
+
         this.maxArchiveMillis = parseTime(properties, FLOW_CONFIGURATION_ARCHIVE_MAX_TIME, Long.MAX_VALUE);
 
         String maxArchiveSize = properties.getProperty(CONTENT_ARCHIVE_MAX_USAGE_PERCENTAGE);
@@ -70,7 +93,7 @@ public class RepositoryConfig {
         if (this.failureTimeoutMs > 0 && this.failureTimeoutMs < (HEALTH_CHECK_RUN_INTERVAL_SECONDS * 1000)) {
             // the failure reset mechanism could probably be moved out of
             // the health monitor in order to accomodate a smaller failure timeout
-            LOG.warn("Failure timeout is less than the minimum (seconds): " + 
+            LOG.warn("Failure timeout is less than the minimum (seconds): " +
                 (this.failureTimeoutMs / 1000) + " < " + HEALTH_CHECK_RUN_INTERVAL_SECONDS + " - effectively using minimum");
         }
 

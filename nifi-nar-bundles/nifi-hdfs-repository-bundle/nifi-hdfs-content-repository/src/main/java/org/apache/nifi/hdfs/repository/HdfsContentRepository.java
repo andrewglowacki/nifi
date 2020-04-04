@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
 import java.io.ByteArrayInputStream;
@@ -53,37 +69,37 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Stores flow file content using the hadoop FileSystem API.
- * 
+ *
  * In addition to the normal content repository properties, this one takes the following additional properties:
- * 
+ *
  * Required:
- * 
+ *
  * nifi.content.repository.hdfs.core.site - the default hadoop core-site.xml file to configure file systems with.
  * Note: this isn't actually required as long as each container specifies their own core.site.xml. See below.
- * 
+ *
  * Optional:
- * nifi.content.repository.hdfs.operating.mode - A comma separated list of operating modes that governs the 
+ * nifi.content.repository.hdfs.operating.mode - A comma separated list of operating modes that governs the
  * behavior of the content repository. See the 'OperatingMode' enum for possible values and their behavior.
- * 
+ *
  * Each configured container can optionally specify their own core-site.xml.
  * Example:
- * 
+ *
  * Assume the following two containers:
  * nifi.content.repository.directory.location1=uri://path/to/dir1
  * nifi.content.repository.directory.location2=uri://path/to/dir2
- * 
+ *
  * Then the following two properites can also be provided:
  * nifi.content.repository.hdfs.core.site.location1=/path/to/core-site-1.xml
  * nifi.content.repository.hdfs.core.site.location2=/path/to/core-site-2.xml
- * 
- * nifi.content.repository.hdfs.full.percentage - the percentage (in integer percentage points) of a container's 
- * capcity that must be occupied before treating the container as 'full'. Note: once a container is full, 
+ *
+ * nifi.content.repository.hdfs.full.percentage - the percentage (in integer percentage points) of a container's
+ * capcity that must be occupied before treating the container as 'full'. Note: once a container is full,
  * all writes will stop for that container. If all containers are full and there is no fallback, claim creation will
  * stop until space becomes available. Note: if a value isn't specified explicitly, 95 is used.
- * 
- * nifi.content.repository.hdfs.failure.timeout - the amount of time to wait when a 
+ *
+ * nifi.content.repository.hdfs.failure.timeout - the amount of time to wait when a
  * failure ocurrs for a container before attempting to use that container again for writing.
- * 
+ *
  * nifi.content.repository.hdfs.wait.active.containers.timeout - the amount of time to wait
  * for an active container to be avaible before giving up and throwing an exception. Defaults to indefinite.
  */
@@ -99,8 +115,8 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
     protected static final String ARCHIVE_GROUP_PROPERTY = "nifi.content.repository.hdfs.archive";
     protected static final String WAIT_FOR_CONTAINERS_TIMEOUT = "nifi.content.repository.hdfs.wait.active.containers.timeout";
     protected static final String SECTIONS_PER_CONTAINER_PROPERTY = "nifi.content.repository.hdfs.sections.per.container";
-	protected static final String ARCHIVE_DIR_NAME = "archive";
-	protected static final Pattern MAX_ARCHIVE_SIZE_PATTERN = Pattern.compile("^[0-9][0-9]?%");
+    protected static final String ARCHIVE_DIR_NAME = "archive";
+    protected static final Pattern MAX_ARCHIVE_SIZE_PATTERN = Pattern.compile("^[0-9][0-9]?%");
     private final AtomicLong nextClaimIndex = new AtomicLong();
     private final ConcurrentMap<ResourceClaim, ByteCountingOutputStream> writableClaimStreams = new ConcurrentHashMap<>();
     private final LinkedBlockingQueue<ClaimAndLength> writableClaims;
@@ -161,14 +177,14 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
         if (archive != null) {
             allContainers.putAll(archive.getAll());
         }
-        
+
         this.activeGroup = primary;
         this.allContainers = allContainers;
 
         int numThreads = 2 + (2 * allContainers.size());
         if (archive != null) {
             numThreads -= archive.getNumContainers();
-            
+
             // we need a re-archive thread for each primary/secondary container if rearchiving is enabled.
             numThreads += primary.getNumContainers();
             if (secondary != null) {
@@ -212,13 +228,13 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
 
         workThreads.scheduleWithFixedDelay(new BinDestructableClaims(claimManager, workContainers), 1, 1, TimeUnit.SECONDS);
 
-        workThreads.scheduleWithFixedDelay(new ContainerHealthMonitor(this, primary, secondary, repoConfig), 
+        workThreads.scheduleWithFixedDelay(new ContainerHealthMonitor(this, primary, secondary, repoConfig),
             HEALTH_CHECK_RUN_INTERVAL_SECONDS, HEALTH_CHECK_RUN_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
         for (int i = 0; i < workContainers.size(); i++) {
             workThreads.scheduleWithFixedDelay(new ArchiveOrDestroyDestructableClaims(this, workContainers.values()), 1, 1, TimeUnit.SECONDS);
         }
-        
+
         for (Container container : allContainers.values()) {
             workThreads.scheduleWithFixedDelay(new DestroyExpiredArchiveClaims(this, container, repoConfig.getMaxArchiveMillis()), 1, 1, TimeUnit.SECONDS);
         }
@@ -266,7 +282,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
     public String getContainerFileStoreName(String containerName) {
         return getContainer(containerName).getPath().getName();
     }
-    
+
     private Container getContainer(ContentClaim claim) {
         return getContainer(claim.getResourceClaim().getContainer());
     }
@@ -279,15 +295,15 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
         if (container == null) {
             throw new IllegalArgumentException("Container doesn't exist with name: " + name);
         }
-        
+
         return container;
     }
 
     /**
      * Adapted from FileSystemRepository
-     * 
+     *
      * Removed use of 'ContainerState' and backpressure due to the assumption
-     * that it's not possible to fill up HDFS faster than it would be to age 
+     * that it's not possible to fill up HDFS faster than it would be to age
      * archived files off.
      */
     @Override
@@ -300,7 +316,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
             long currentIndex = nextClaimIndex.incrementAndGet();
 
             Container container = getActiveContainer(currentIndex);
-            
+
             long modulatedSectionIndex = currentIndex % repoConfig.getSectionsPerContainer();
             String section = String.valueOf(modulatedSectionIndex).intern();
             String claimId = System.currentTimeMillis() + "-" + currentIndex;
@@ -340,8 +356,8 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
             try {
                 long started = System.currentTimeMillis();
                 thread.setName(origName + " - waiting for active containers since " + started);
-                while ((container = activeGroup.nextActiveAtModIndex(currentIndex)) == null && 
-                    System.currentTimeMillis() - started < repoConfig.getWaitForContainerTimeoutMs()) {
+                while ((container = activeGroup.nextActiveAtModIndex(currentIndex)) == null
+                    && System.currentTimeMillis() - started < repoConfig.getWaitForContainerTimeoutMs()) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException ex) {
@@ -363,7 +379,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
         if (claim == null || claim.getResourceClaim() == null) {
             return 0;
         }
-        
+
         return claimManager.incrementClaimantCount(claim.getResourceClaim(), false);
     }
 
@@ -593,7 +609,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
             inStream = fs.open(path);
         } catch (IOException ex) {
             try {
-                // Assume the claim is archived and get it's actual location. We assume 
+                // Assume the claim is archived and get it's actual location. We assume
                 // it's not archived at first as an optimization since this is the common case.
                 ClaimStatus status = getStatus(claim, true);
                 container = status.getContainer();
@@ -653,7 +669,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
         StandardContentClaim scc = validateContentClaimForWriting(claim);
 
         ByteCountingOutputStream claimStream = writableClaimStreams.get(scc.getResourceClaim());
-        
+
         OutputStream out = new ClaimOutputStream(this, scc, claimStream);
 
         LOG.debug("Writing to {}", out);
@@ -689,7 +705,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
         }
 
         ContentClaim newClaim = create(lossTolerant);
-        
+
         Container oldContainer = getContainer(original);
         Container newContainer = getContainer(newClaim);
 
@@ -698,7 +714,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
 
         boolean readOkay = false;
         boolean writeOkay = false;
-        
+
         try {
             FileSystem fs = oldContainer.getFileSystem();
             try {
@@ -739,7 +755,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
                 RemoteIterator<LocatedFileStatus> fileIter;
                 try {
                     fileIter = fs.listFiles(container.getPath(), true);
-                } catch (FileNotFoundException ex) { 
+                } catch (FileNotFoundException ex) {
                     continue;
                 }
                 while (fileIter.hasNext()) {
@@ -771,7 +787,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
                 FileStatus[] sections;
                 try {
                     sections = fs.listStatus(container.getPath());
-                } catch (FileNotFoundException ex) { 
+                } catch (FileNotFoundException ex) {
                     continue;
                 }
 
@@ -781,7 +797,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
                     }
 
                     String sectionName = section.getPath().getName();
-                    
+
                     try {
                         RemoteIterator<FileStatus> files = fs.listStatusIterator(section.getPath());
                         while (files.hasNext()) {
@@ -791,7 +807,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
                             }
 
                             String id = file.getPath().getName();
-                            
+
                             ResourceClaim resourceClaim = claimManager.newResourceClaim(container.getName(), sectionName, id, false, false);
                             if (claimManager.getClaimantCount(resourceClaim) == 0) {
                                 removeIncompleteContent(fs, container, file.getPath(), file.getLen());
@@ -859,7 +875,7 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
         }
         return archived;
     }
-    
+
     protected boolean archive(Container container, Path curPath) throws IOException {
         return archive(container.getFileSystem(), container, curPath);
     }
@@ -1012,14 +1028,14 @@ public class HdfsContentRepository implements ClaimClosedHandler, ArchivableRepo
 
     @Override
     public void claimClosed(ClaimOutputStream claimStream) throws IOException {
-        
+
         StandardContentClaim claim = claimStream.getClaim();
 
         if (repoConfig.isAlwaysSync()) {
             FSDataOutputStream fsOutStream = (FSDataOutputStream)claimStream.getOutStream().getWrappedStream();
             fsOutStream.hsync();
         } else if (claimStream.canRecycle()) {
-            // flush from fs data output stream to the disk. This happens naturally 
+            // flush from fs data output stream to the disk. This happens naturally
             // with FileOutputStream, but not with hadoop's FSDataOutputStream for obvious reasons
             claimStream.getOutStream().flush();
         }

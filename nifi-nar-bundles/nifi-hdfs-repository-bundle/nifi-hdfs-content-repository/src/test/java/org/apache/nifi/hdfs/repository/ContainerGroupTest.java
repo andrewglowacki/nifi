@@ -1,6 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
-import static org.apache.nifi.hdfs.repository.HdfsContentRepository.*;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.ARCHIVE_DIR_NAME;
+import static org.apache.nifi.hdfs.repository.HdfsContentRepository.CORE_SITE_DEFAULT_PROPERTY;
 import static org.apache.nifi.util.NiFiProperties.REPOSITORY_CONTENT_PREFIX;
 import static org.apache.nifi.util.NiFiProperties.CONTENT_ARCHIVE_MAX_USAGE_PERCENTAGE;
 import static org.junit.Assert.assertEquals;
@@ -24,7 +41,10 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.nifi.util.NiFiProperties;
 import org.junit.Test;
 
-import static org.apache.nifi.hdfs.repository.PropertiesBuilder.*;
+import static org.apache.nifi.hdfs.repository.PropertiesBuilder.SECTIONS_PER_CONTAINER;
+import static org.apache.nifi.hdfs.repository.PropertiesBuilder.config;
+import static org.apache.nifi.hdfs.repository.PropertiesBuilder.prop;
+import static org.apache.nifi.hdfs.repository.PropertiesBuilder.props;
 
 public class ContainerGroupTest {
 
@@ -57,7 +77,7 @@ public class ContainerGroupTest {
             assertTrue(ex.getMessage(), ex.getMessage().contains("No containers found with an id of: disk3"));
         }
     }
-    
+
     @Test
     public void noContainersAtAllTest() {
         NiFiProperties props = props(
@@ -171,14 +191,14 @@ public class ContainerGroupTest {
         assertNotNull(group.getAll().get("disk1"));
         assertNotNull(group.getAll().get("disk2"));
         assertEquals(group.get("disk1").getConfig(), group.get("disk2").getConfig());
-        
+
         assertNotNull(group.atModIndex(0));
         assertNotNull(group.atModIndex(1));
         assertNotEquals(group.atModIndex(0), group.atModIndex(1));
         assertEquals(group.atModIndex(0), group.atModIndex(2));
         assertEquals(group.atModIndex(1), group.atModIndex(3));
         assertNotEquals(group.atModIndex(1), group.atModIndex(2));
-        
+
         assertNotNull(group.nextActiveAtModIndex(0));
         assertNotNull(group.nextActiveAtModIndex(1));
         assertNotEquals(group.nextActiveAtModIndex(0), group.nextActiveAtModIndex(1));
@@ -190,7 +210,7 @@ public class ContainerGroupTest {
         assertEquals("disk1", disk1.getName());
         assertEquals(workPath + "/target/test-repo1", disk1.getPath().toString());
         assertTrue(disk1.isActive());
-        
+
         Container disk2 = group.get("disk2");
         assertEquals("disk2", disk2.getName());
         assertEquals(workPath + "/target/test-repo2", disk2.getPath().toString());
@@ -225,7 +245,7 @@ public class ContainerGroupTest {
         for (int i = 1; i <= 2; i++) {
             File repoDir = new File("target/test-repo" + i);
             assertTrue(repoDir.isDirectory());
-            
+
             File[] sections = repoDir.listFiles();
             Map<String, File> sectionMap = new HashMap<>();
             for (File section : sections) {
@@ -261,7 +281,7 @@ public class ContainerGroupTest {
         // sanity check
         assertNotEquals(one, two);
 
-        // can't really check too much here, but we have changed the 
+        // can't really check too much here, but we have changed the
         // replication amount, and that should affect size based properties
         assertNotEquals(one.getConfig(), two.getConfig());
         assertNotEquals(one.getConfig().get(DFSConfigKeys.DFS_REPLICATION_KEY), two.getConfig().get(DFSConfigKeys.DFS_REPLICATION_KEY));
@@ -284,22 +304,22 @@ public class ContainerGroupTest {
         // make the first container 'full' and therefore inactive
         group.atModIndex(0).setFull(true);
 
-        // we should still get one active group back, 
+        // we should still get one active group back,
         // but it will be the same for all indexes
         assertNotNull(group.nextActiveAtModIndex(0));
         assertNotNull(group.nextActiveAtModIndex(1));
         assertEquals(group.nextActiveAtModIndex(0), group.nextActiveAtModIndex(1));
-        
+
         // now make the othe container 'full' too - now both containers should be inactive
         group.atModIndex(1).setFull(true);
 
-        // we don't care whether or not the containers are active 
+        // we don't care whether or not the containers are active
         // while using 'atModIndex', so both should be returned
         assertNotNull(group.atModIndex(0));
         assertNotNull(group.atModIndex(1));
         assertNotEquals(group.atModIndex(0), group.atModIndex(1));
 
-        // when we are specifically asking for the next active now, 
+        // when we are specifically asking for the next active now,
         // we shouldn't get anything back because both containers are inactive
         assertNull(group.nextActiveAtModIndex(0));
         assertNull(group.nextActiveAtModIndex(1));

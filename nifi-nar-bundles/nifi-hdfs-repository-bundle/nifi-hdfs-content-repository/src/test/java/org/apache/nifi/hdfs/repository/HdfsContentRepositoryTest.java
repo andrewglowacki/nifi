@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.nifi.hdfs.repository;
 
 import static org.apache.nifi.hdfs.repository.HdfsContentRepository.ARCHIVE_DIR_NAME;
@@ -284,7 +300,7 @@ public class HdfsContentRepositoryTest {
             assertEquals(1, repo.getWritableClaimStreams().size());
         }
     }
-    
+
     @Test
     public void writeEmptyClaimTest() throws IOException {
         try (HdfsContentRepository repo = new HdfsContentRepository(basic)) {
@@ -295,7 +311,7 @@ public class HdfsContentRepositoryTest {
             repo.write(claim).close();
 
             assertEquals(0, claim.getLength());
-            
+
             File claimFile = new File("target/test-repo2/1/" + claim.getResourceClaim().getId());
             assertTrue(claimFile.isFile());
             assertEquals(0, claimFile.length());
@@ -338,7 +354,7 @@ public class HdfsContentRepositoryTest {
 
             ResourceClaim resource1 = claim1.getResourceClaim();
             ResourceClaim resource2 = claim2.getResourceClaim();
-            
+
             assertEquals(1, repo.getWritableClaimStreams().size());
 
             assertEquals(resource1, resource2);
@@ -501,7 +517,7 @@ public class HdfsContentRepositoryTest {
             }
         }
     }
-    
+
     @Test
     public void importTest() throws IOException {
         File outFile = new File("target/test-file");
@@ -550,7 +566,7 @@ public class HdfsContentRepositoryTest {
             assertEquals(dataStr.length(), repo.exportTo(claim, outFile.toPath(), false));
             assertTrue(outFile.isFile());
             assertEquals(dataStr, FileUtils.readFileToString(outFile, StandardCharsets.UTF_8));
-            
+
             assertTrue(outFile.delete());
 
             assertEquals(8, repo.exportTo(claim, outFile.toPath(), false, 3, 8));
@@ -567,14 +583,14 @@ public class HdfsContentRepositoryTest {
         } catch (NullPointerException ex) {
             assertTrue(ex.getMessage(), ex.getMessage().contains("ContentClaim cannot be null"));
         }
-        
+
         try {
             HdfsContentRepository.validateContentClaimForWriting(Mockito.mock(ContentClaim.class));
             fail("Expected exception because the claim is not a StandardContentClaim.");
         } catch (IllegalArgumentException ex) {
             assertTrue(ex.getMessage(), ex.getMessage().contains("Content Claim does belong to this Content Repository"));
         }
-        
+
         try {
             StandardContentClaim claim = new StandardContentClaim(null, 0);
             claim.setLength(10);
@@ -641,7 +657,7 @@ public class HdfsContentRepositoryTest {
             assertEquals(0, repo.getWritableClaimStreams().size());
 
             ContentClaim cloned = repo.clone(claim, true);
-            
+
             assertEquals(1, repo.getWritableClaimStreams().size());
 
             assertNotNull(cloned);
@@ -681,7 +697,7 @@ public class HdfsContentRepositoryTest {
             assertEquals(dataStr, archivedStr);
         }
     }
-    
+
     @Test
     public void archiveActiveTest() throws IOException {
 
@@ -813,7 +829,7 @@ public class HdfsContentRepositoryTest {
             assertEquals(1, repo.getWritableClaimStreams().size());
 
             assertTrue(repo.remove(claim));
-            
+
             assertEquals(0, repo.getWritableClaimStreams().size());
         }
     }
@@ -944,7 +960,7 @@ public class HdfsContentRepositoryTest {
 
     @Ignore
     private static class NewResourceClaim implements Answer<ResourceClaim> {
-        
+
         private final boolean inUse;
 
         public NewResourceClaim(boolean inUse) {
@@ -963,7 +979,7 @@ public class HdfsContentRepositoryTest {
 
             return createClaim(container, section, id, lossTolerant, inUse);
         }
-    };
+    }
 
     private static StandardResourceClaim createClaim(String container, String section, String id, boolean lossTolerant, boolean inUse) {
         return new StandardResourceClaim(null, container, section, id, true) {
